@@ -1,3 +1,5 @@
+﻿export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -41,7 +43,7 @@ function getDifficulty(level: Level, experience: Experience) {
 }
 
 function getTitle(role: Role, level: Level, experience: Experience) {
-  return `${getRoleLabel(role)} · ${getLevelLabel(level)} · ${getExperienceLabel(
+  return `${getRoleLabel(role)} Â· ${getLevelLabel(level)} Â· ${getExperienceLabel(
     experience
   )}`;
 }

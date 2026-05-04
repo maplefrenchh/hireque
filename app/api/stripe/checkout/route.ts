@@ -1,3 +1,5 @@
+﻿export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
@@ -73,3 +75,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Failed to create checkout session" }, { status: 500 });
   }
 }
+

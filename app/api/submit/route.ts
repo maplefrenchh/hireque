@@ -1,3 +1,5 @@
+﻿export const dynamic = "force-dynamic";
+
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -1218,6 +1220,7 @@ if (
     );
   }
 }
+
 
 
 

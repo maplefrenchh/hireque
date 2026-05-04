@@ -1,3 +1,5 @@
+﻿export const dynamic = "force-dynamic";
+
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
 
@@ -882,10 +884,10 @@ Return STRICT JSON only:
         currentStep.sender === "customer"
           ? behavior.pressureTier === "normal"
             ? "That still does not answer my concern. What exactly would you do for me right now?"
-            : "You’re still being vague. What exactly are you going to say or do to fix this for me?"
+            : "Youâ€™re still being vague. What exactly are you going to say or do to fix this for me?"
           : behavior.pressureTier === "normal"
           ? "That did not directly answer the question. Give me the exact action you would take and the words you would use."
-          : "You’re still giving a generic answer. Give me the exact words you would say to the customer and the exact next step you would take.",
+          : "Youâ€™re still giving a generic answer. Give me the exact words you would say to the customer and the exact next step you would take.",
     };
   }
 }
@@ -1104,3 +1106,4 @@ Hard rules:
     );
   }
 }
+
