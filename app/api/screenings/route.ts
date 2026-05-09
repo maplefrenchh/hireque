@@ -133,7 +133,7 @@ export async function POST(req: Request) {
 
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .select("company_id")
+      .select("company_id, role, approval_status")
       .eq("id", userData.user.id)
       .single();
 
@@ -143,6 +143,12 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+    if (profile.role !== "admin" && profile.approval_status !== "approved") {
+  return NextResponse.json(
+    { error: "Company approval pending" },
+    { status: 403 }
+  );
+}
 
     const scenarioSeed = crypto.randomUUID();
     const title = getTitle(role, level, experience);
@@ -234,4 +240,5 @@ export async function POST(req: Request) {
     );
   }
 }
+
 

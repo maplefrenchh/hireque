@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 
   const { data: profile, error: profileError } = await supabaseAdmin
     .from("profiles")
-    .select("company_id")
+    .select("company_id, role, approval_status")
     .eq("id", user.id)
     .single();
 
@@ -37,5 +37,10 @@ export async function GET(req: NextRequest) {
       email: user.email,
     },
     company_id: profile.company_id,
+    profile: {
+      company_id: profile.company_id,
+      role: profile.role || "company",
+      approval_status: profile.approval_status || "pending",
+    },
   });
 }

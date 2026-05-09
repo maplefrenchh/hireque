@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 
@@ -23,11 +23,21 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
           cache: "no-store",
         });
 
+        const data = await res.json().catch(() => ({}));
+
         if (!res.ok) {
           localStorage.removeItem("hireque_access_token");
           localStorage.removeItem("hireque_user_email");
           document.cookie = "hireque_access_token=; path=/; max-age=0";
           window.location.replace("/login");
+          return;
+        }
+
+        const role = data?.profile?.role;
+        const approvalStatus = data?.profile?.approval_status;
+
+        if (role !== "admin" && approvalStatus !== "approved") {
+          window.location.replace("/pending-approval");
           return;
         }
 
