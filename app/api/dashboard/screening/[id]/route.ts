@@ -1,52 +1,48 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 
-export async function GET(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
-) {
-  try {
-    const resolvedParams = await params;
-    const screeningId = resolvedParams.id;
+type RouteContext = {
+  params: Promise<{ id: string }>;
+};
 
-    const authHeader = req.headers.get("authorization");
-    const token = authHeader?.replace("Bearer ", "").trim();
+export async function GET(req: NextRequest, { params }: RouteContext) {
+  try {
+    const { id: screeningId } = await params;
+
+    const authHeader = req.headers.get("authorization") || "";
+    const token = authHeader.replace("Bearer ", "").trim();
 
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const supabaseUserClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseAdmin.auth.getUser(token);
 
-    const { data: userData, error: userError } =
-      await supabaseUserClient.auth.getUser(token);
-
-    if (userError || !userData.user) {
-      return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+    if (userError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // ✅ CORRECT: get company_id from profiles
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
       .select("company_id")
-      .eq("id", userData.user.id)
+      .eq("id", user.id)
       .single();
 
     if (profileError || !profile?.company_id) {
       return NextResponse.json(
         { error: "Company profile not found" },
-        { status: 400 }
+        { status: 404 }
       );
     }
 
+    // ✅ validate screening ownership
     const { data: screening, error: screeningError } = await supabaseAdmin
       .from("screenings")
-      .select(
-        "id, title, role, level, experience, industry, scenario_seed, status, created_at"
-      )
+      .select("*")
       .eq("id", screeningId)
       .eq("company_id", profile.company_id)
       .single();
@@ -58,38 +54,17 @@ export async function GET(
       );
     }
 
+    // ✅ get candidates (attempts)
     const { data: attempts, error: attemptsError } = await supabaseAdmin
-      .from("screening_attempts")
-      .select(
-        `
-        id,
-        screening_id,
-        candidate_name,
-        candidate_email,
-        role,
-        level,
-        experience,
-        score,
-        verdict,
-        summary,
-        recommendation,
-        strengths,
-        weaknesses,
-        red_flags,
-        dimension_scores,
-        phase_scores,
-        hiring_risk,
-        interview_quality,
-        created_at
-      `
-      )
-      .eq("screening_id", screening.id);
+      .from("candidate_reports")
+      .select("*")
+      .eq("screening_id", screeningId)
+      .eq("company_id", profile.company_id)
+      .order("created_at", { ascending: false });
 
     if (attemptsError) {
-      console.error("Load screening attempts error:", attemptsError);
-
       return NextResponse.json(
-        { error: "Failed to load candidates" },
+        { error: attemptsError.message },
         { status: 500 }
       );
     }
@@ -98,11 +73,9 @@ export async function GET(
       screening,
       attempts: attempts || [],
     });
-  } catch (error) {
-    console.error("Screening API error:", error);
-
+  } catch (err) {
     return NextResponse.json(
-      { error: "Failed to load screening" },
+      { error: err instanceof Error ? err.message : "Server error" },
       { status: 500 }
     );
   }

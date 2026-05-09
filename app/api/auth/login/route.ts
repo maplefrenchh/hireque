@@ -1,4 +1,4 @@
-﻿export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -24,10 +24,20 @@ export async function POST(req: Request) {
       password,
     });
 
-    if (error || !data.session) {
+    if (error || !data.session || !data.user) {
       return NextResponse.json(
         { error: error?.message || "Login failed" },
         { status: 400 }
+      );
+    }
+
+    if (!data.user.email_confirmed_at) {
+      return NextResponse.json(
+        {
+          error:
+            "Email not verified. Check your inbox and verify your account before logging in.",
+        },
+        { status: 403 }
       );
     }
 

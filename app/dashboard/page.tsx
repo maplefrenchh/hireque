@@ -2,8 +2,9 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import OpenReportLink from "@/components/OpenReportLink";
 import { useSearchParams } from "next/navigation";
-import HirequeLogo from "@/components/HirequeLogo";
+import HirequeLogo from "@/components/HirequeLogo";import LogoutButton from "@/components/LogoutButton";
 import CopyInviteButton from "@/components/CopyInviteButton";
 import ArchiveScreeningButton from "@/components/ArchiveScreeningButton";
 
@@ -176,7 +177,6 @@ function DashboardInner() {
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
   useEffect(() => {
     let cancelled = false;
 
@@ -203,6 +203,12 @@ function DashboardInner() {
         const data = await readJsonSafe(res);
 
         if (!res.ok) {
+          if (res.status === 401 || data.error === "Invalid session") {
+            
+            window.location.href = "/login";
+            return;
+          }
+
           throw new Error(data.error || "Failed to load dashboard.");
         }
 
@@ -299,6 +305,15 @@ function DashboardInner() {
           <HirequeLogo />
 
           <div className="flex flex-wrap gap-3">
+            <Link
+              href="/"
+              className="rounded-full border border-white/10 px-5 py-3 text-sm font-bold text-slate-300 hover:bg-white/10"
+            >
+              ← Back to Home
+            </Link>
+
+            <LogoutButton />
+
             <Link
               href="/dashboard?status=active"
               className={`rounded-full px-5 py-3 text-sm font-bold ${
@@ -516,7 +531,7 @@ function DashboardInner() {
                                       {topCandidate.candidate_name || "Unnamed Candidate"}
                                     </p>
                                     <p className="mt-1 text-sm text-slate-400">
-                                      {formatLabel(topCandidate.verdict)} · Submitted {formatDate(topCandidate.created_at)}
+                                      {formatLabel(topCandidate.verdict)} Â· Submitted {formatDate(topCandidate.created_at)}
                                     </p>
                                   </div>
 
@@ -544,22 +559,17 @@ function DashboardInner() {
                               href={`/dashboard/screening/${screening.id}`}
                               className="rounded-full bg-blue-600 px-4 py-3 text-center text-sm font-black hover:bg-blue-500"
                             >
-                              View candidates
+                              View ranked list
                             </Link>
-<ArchiveScreeningButton screeningId={screening.id} />
+<ArchiveScreeningButton screeningId={screening.id} status={screening.status || statusFilter} />
 
                             {topCandidate && (
-                              <Link
-                                href={`/dashboard/report/${topCandidate.id}`}
-                                className="rounded-full border border-white/10 px-4 py-3 text-center text-sm font-black text-slate-200 hover:bg-white/10"
-                              >
+                              <OpenReportLink reportId={topCandidate.id} className="rounded-full border border-white/10 px-4 py-3 text-center text-sm font-black text-slate-200 hover:bg-white/10">
                                 Open top report
-                              </Link>
+                              </OpenReportLink>
                             )}
 
-                            {statusFilter === "active" && (
-                              <ArchiveScreeningButton screeningId={screening.id} />
-                            )}
+                            
                           </aside>
                         </div>
                       </article>
@@ -705,6 +715,14 @@ function Badge({
     </span>
   );
 }
+
+
+
+
+
+
+
+
 
 
 

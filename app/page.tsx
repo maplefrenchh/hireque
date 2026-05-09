@@ -1,4 +1,9 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import HirequeLogo from "@/components/HirequeLogo";
+import LogoutButton from "@/components/LogoutButton";
 import {
   ArrowRight,
   BadgeCheck,
@@ -26,6 +31,15 @@ const industries = [
 ];
 
 export default function Home() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [companyEmail, setCompanyEmail] = useState("");
+
+  useEffect(() => {
+    const token = localStorage.getItem("hireque_access_token");
+    const email = localStorage.getItem("hireque_user_email") || "";
+    setIsLoggedIn(Boolean(token));
+    setCompanyEmail(email);
+  }, []);
   return (
     <main className="min-h-screen bg-[#050914] text-white">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
@@ -45,19 +59,35 @@ export default function Home() {
   Pricing
 </a>
 
-<a
-  href="/login"
-            className="rounded-full border border-white/15 px-5 py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/10"
-          >
-            Login
-          </a>
 
-          <a
-            href="/signup"
-            className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-[#050914] hover:bg-blue-100"
-          >
-            Start pilot
-          </a>
+
+{isLoggedIn ? (
+            <>
+              <a
+                href="/dashboard"
+                className="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-black text-white hover:bg-blue-500"
+              >
+                Dashboard
+              </a>
+              <LogoutButton />
+            </>
+          ) : (
+            <>
+              <a
+                href="/login"
+                className="rounded-full border border-white/15 px-5 py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/10"
+              >
+                Login
+              </a>
+
+              <a
+                href="/signup"
+                className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-[#050914] hover:bg-blue-100"
+              >
+                Start pilot
+              </a>
+            </>
+          )}
         </div>
       </nav>
 

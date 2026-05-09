@@ -1,18 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import HirequeLogo from "@/components/HirequeLogo";
-import { useRouter } from "next/navigation";
+
 
 export default function LoginPage() {
-  const router = useRouter();
-
-  const [email, setEmail] = useState("");
+const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [verifyNotice, setVerifyNotice] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.get("verify") === "1") {
+      setVerifyNotice(true);
+
+      const timer = setTimeout(() => setVerifyNotice(false), 7000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   const handleLogin = async () => {
     setError("");
@@ -43,7 +53,22 @@ export default function LoginPage() {
     localStorage.setItem("hireque_access_token", data.access_token);
     localStorage.setItem("hireque_user_email", data.user.email);
 
-    router.push("/dashboard");
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get("next");
+
+    if (next && next.startsWith("/dashboard/report/")) {
+      const sep = next.includes("?") ? "&" : "?";
+      window.location.href = `${next}${sep}token=${encodeURIComponent(data.access_token)}`;
+      return;
+    }
+
+    if (next && next.startsWith("/")) {
+      window.location.href = next;
+      return;
+    }
+
+    window.location.href = "/dashboard";
+
   };
 
   return (
@@ -56,10 +81,21 @@ export default function LoginPage() {
 
           <h1 className="text-3xl font-black">Login</h1>
           <p className="mt-2 text-slate-400">
-            Access your candidate screening dashboard.
-          </p>
+  Access your candidate screening dashboard.
+</p>
+
+{verifyNotice && (
+  <div className="mt-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-300">
+    Signup successful. Check your email and verify your account before logging in.
+  </div>
+)}
 
           <form className="mt-8 space-y-4">
+            <div className="text-right">
+              <Link href="/forgot-password" className="text-sm font-bold text-blue-300 hover:text-blue-200">
+                Forgot password?
+              </Link>
+            </div>
             <input
               value={email}
               onChange={(e) => setEmail(e.target.value)}

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useParams, useSearchParams } from "next/navigation";
@@ -277,8 +277,7 @@ export default function InterviewClient() {
     };
 
     recorder.onstop = async () => {
-      const recordedType = recorderRef.current?.mimeType || "video/webm";
-      const blob = new Blob(chunksRef.current, { type: recordedType });
+      const blob = new Blob(chunksRef.current, { type: "video/webm" });
 
       if (blob.size < 1000) {
         setSystemNotice("Recording was too short or empty. Record your answer again.");
@@ -318,8 +317,7 @@ export default function InterviewClient() {
   const handleRecordedAnswer = async (blob: Blob) => {
     try {
       const formData = new FormData();
-      const extension = blob.type.includes("mp4") ? "mp4" : "webm";
-      formData.append("audio", blob, `candidate-answer.${extension}`);
+      formData.append("audio", blob, "candidate-answer.webm");
 
       const transcriptRes = await fetch("/api/transcribe", {
         method: "POST",
@@ -815,4 +813,3 @@ function CheckLine({ text }: { text: string }) {
     </div>
   );
 }
-

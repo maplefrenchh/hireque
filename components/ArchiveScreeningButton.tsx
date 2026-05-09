@@ -1,70 +1,83 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+
+type ScreeningStatus = "active" | "archived";
 
 export default function ArchiveScreeningButton({
   screeningId,
+  status = "active",
 }: {
   screeningId: string;
+  status?: ScreeningStatus | string | null;
 }) {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  const handleArchive = async () => {
-    const confirmAction = window.confirm(
-      "Archive this screening? It will move out of active list but data stays."
-    );
+  const currentStatus: ScreeningStatus =
+    status === "archived" ? "archived" : "active";
 
-    if (!confirmAction) return;
+  async function handleAction(action: "archive" | "restore" | "delete") {
+    if (loading) return;
+
+    if (action === "delete") {
+      const ok = window.confirm(
+        "Delete this screening permanently? This cannot be undone."
+      );
+      if (!ok) return;
+    }
 
     setLoading(true);
 
     try {
-      const token = localStorage.getItem("hireque_access_token");
-
-      if (!token) {
-        alert("Session expired. Login again.");
-        return;
-      }
-
-      const res = await fetch(`/api/screenings/${screeningId}`, {
+      const res = await fetch("/api/screenings/action", {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status: "archived" }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ screeningId, action }),
       });
 
-      const text = await res.text();
-
-let data: { error?: string } = {};
-try {
-  data = JSON.parse(text);
-} catch {
-  throw new Error(`Archive API returned HTML/non-JSON. Status ${res.status}. Check route path.`);
-}
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        alert(data.error || "Failed to archive.");
-        return;
+        throw new Error(data.error || "Action failed");
       }
 
-      router.refresh();
-    } catch (err) {
-      console.error(err);
-      alert("Something went wrong.");
-    } finally {
+      window.location.reload();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Action failed");
       setLoading(false);
     }
-  };
+  }
+
+  if (currentStatus === "archived") {
+    return (
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={loading}
+          onClick={() => handleAction("restore")}
+          className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-300 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {loading ? "Working..." : "Move to Active"}
+        </button>
+
+        <button
+          type="button"
+          disabled={loading}
+          onClick={() => handleAction("delete")}
+          className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs font-black text-rose-300 hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {loading ? "Working..." : "Delete"}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <button
-      onClick={handleArchive}
+      type="button"
       disabled={loading}
-      className="rounded-full border border-white/10 px-4 py-3 text-sm font-bold text-slate-300 hover:bg-white/10 disabled:opacity-50"
+      onClick={() => handleAction("archive")}
+      className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-black text-slate-300 hover:border-slate-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
     >
       {loading ? "Archiving..." : "Archive"}
     </button>

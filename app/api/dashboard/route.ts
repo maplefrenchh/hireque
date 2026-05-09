@@ -1,4 +1,4 @@
-﻿export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -9,6 +9,7 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const statusFilter =
       url.searchParams.get("status") === "archived" ? "archived" : "active";
+
     const token = req.headers.get("authorization")?.replace("Bearer ", "").trim();
 
     if (!token) {
@@ -45,7 +46,8 @@ export async function GET(req: Request) {
       .select(
         "id, title, role, level, experience, industry, scenario_seed, status, created_at"
       )
-      .eq("company_id", profile.company_id).eq("status", statusFilter)
+      .eq("company_id", profile.company_id)
+      .eq("status", statusFilter)
       .order("created_at", { ascending: false });
 
     if (screeningsError) {
@@ -61,33 +63,47 @@ export async function GET(req: Request) {
     let attempts: any[] = [];
 
     if (screeningIds.length > 0) {
-      const { data: attemptsData, error: attemptsError } = await supabaseAdmin
-        .from("screening_attempts")
+      const { data: reportsData, error: reportsError } = await supabaseAdmin
+        .from("candidate_reports")
         .select(
           `
           id,
           screening_id,
           candidate_name,
           candidate_email,
+          overall_score,
           score,
           verdict,
           red_flags,
           strengths,
+          weaknesses,
           created_at
         `
         )
+        .eq("company_id", profile.company_id)
         .in("screening_id", screeningIds)
         .order("created_at", { ascending: false });
 
-      if (attemptsError) {
-        console.error("Dashboard attempts error:", attemptsError);
+      if (reportsError) {
+        console.error("Dashboard reports error:", reportsError);
         return NextResponse.json(
           { error: "Failed to load candidates" },
           { status: 500 }
         );
       }
 
-      attempts = attemptsData || [];
+      attempts = (reportsData || []).map((r: any) => ({
+        id: r.id,
+        screening_id: r.screening_id,
+        candidate_name: r.candidate_name,
+        candidate_email: r.candidate_email,
+        score: r.overall_score ?? r.score ?? 0,
+        verdict: r.verdict,
+        red_flags: r.red_flags || [],
+        strengths: r.strengths || [],
+        weaknesses: r.weakness || [],
+        created_at: r.created_at,
+      }));
     }
 
     return NextResponse.json({
@@ -102,5 +118,4 @@ export async function GET(req: Request) {
     );
   }
 }
-
 

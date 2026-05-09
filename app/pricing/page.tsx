@@ -53,8 +53,11 @@ export default function PricingPage() {
         data: { session },
       } = await supabase.auth.getSession();
 
-      if (!session?.access_token) {
-        window.location.href = "/login";
+      const token =
+        session?.access_token || localStorage.getItem("hireque_access_token");
+
+      if (!token) {
+        window.location.href = "/login?next=/pricing";
         return;
       }
 
@@ -62,22 +65,26 @@ export default function PricingPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ priceId: plan.priceId }),
       });
 
+      if (!res.ok) {
+        console.error("Checkout failed:", res.status);
+        throw new Error("Payment failed");
+      }
+
       const data = await res.json();
 
-      if (!res.ok || !data.url) {
-        alert(data.error || "Checkout failed.");
-        return;
+      if (!data?.url) {
+        throw new Error("Payment failed");
       }
 
       window.location.href = data.url;
-    } catch (error) {
-      console.error(error);
-      alert("Checkout failed.");
+    } catch (err) {
+      console.error("Checkout error:", err);
+      alert("Something went wrong. Please try again.");
     } finally {
       setLoadingPlan(null);
     }
@@ -91,8 +98,8 @@ export default function PricingPage() {
   <ArrowLeft size={16} />
   Back home
 </Link>
-          <Link href="/login" className="rounded-full border border-white/15 px-5 py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/10">
-            Login
+          <Link href="/dashboard" className="rounded-full border border-white/15 px-5 py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/10">
+            Dashboard
           </Link>
         </div>
 

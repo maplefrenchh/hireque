@@ -73,7 +73,8 @@ export async function PATCH(
     const { error: updateError } = await supabaseAdmin
       .from("screenings")
       .update({ status: nextStatus })
-      .eq("id", screeningId);
+      .eq("id", screeningId)
+      .eq("company_id", profile.company_id);
 
     if (updateError) {
       return NextResponse.json({ error: "Failed to update screening" }, { status: 500 });

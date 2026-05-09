@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic";
+﻿export const dynamic = "force-dynamic";
 
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
@@ -755,25 +755,6 @@ async function evaluateLastAnswer({
   const response = await client.responses.create({
     model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
     input: `
-
-ELITE HIREQUE INTERVIEW RULES:
-- Run the interview like a senior wireless district manager, not a generic chatbot.
-- One targeted follow-up is allowed if the answer is vague. After that, pivot to a new scenario.
-- Always test real job performance, not theory.
-- Include at least one closing-pressure moment:
-  Customer says: "I'll think about it." Candidate must attempt a confident close.
-- Include at least one revenue moment:
-  Candidate must identify an upsell, plan upgrade, accessory bundle, protection plan, or retention save.
-- Include at least one chaos moment:
-  Customer is upset, line is building, manager is watching, and the candidate must stay controlled.
-- Penalize vague phrases like: "I would help", "I would explain", "good service", "I would de-escalate" unless backed by exact words/actions.
-- Strong candidates give: exact wording, clear next step, ownership, revenue awareness, and customer control.
-- Weak candidates ramble, summarize, avoid numbers, avoid closing, or need repeated prompting.
-- Never repeat the same follow-up more than once.
-- Do not overcoach the candidate.
-- If the candidate fails the same skill twice, move on and record the weakness silently.
-- If the candidate cannot close, control, or recover an upset customer, treat them as not hire-ready.
-
 You are Hireque's elite answer-quality gatekeeper.
 
 Role: ${role}
@@ -856,65 +837,6 @@ Return STRICT JSON only:
   }
 }
 
-
-/* =========================
-   ELITE INTERVIEW FLOW LOGIC
-   ========================= */
-
-function detectScenarioType(question: string) {
-  const q = question.toLowerCase();
-
-  if (q.includes("upgrade") || q.includes("plan") || q.includes("sell")) {
-    return "sales";
-  }
-
-  if (q.includes("angry") || q.includes("frustrated") || q.includes("issue") || q.includes("support")) {
-    return "customer_service";
-  }
-
-  return "general";
-}
-
-function detectWeakness(answer: string) {
-  const a = answer.toLowerCase();
-
-  return {
-    vague: a.includes("i would") || a.includes("i try") || a.length < 80,
-    noOwnership: !a.includes("i will") && !a.includes("i'll"),
-    noControl: a.includes("wait") || a.includes("line") || a.includes("someone will help"),
-    noSpecifics: !a.includes('"') && !a.includes("'"),
-  };
-}
-
-function getFollowUp(question: string, answer: string, alreadyFollowedUp: boolean) {
-  if (alreadyFollowedUp) return null;
-
-  const type = detectScenarioType(question);
-  const weak = detectWeakness(answer);
-
-  if (weak.vague || weak.noSpecifics) {
-    return "Give me the exact words you would say to the customer, word-for-word.";
-  }
-
-  if (type === "customer_service") {
-    if (weak.noControl) {
-      return "What did YOU do to keep the customer from leaving instead of just asking them to wait?";
-    }
-
-    if (weak.noOwnership) {
-      return "How exactly did you take ownership in that situation?";
-    }
-
-    return "What was the final outcome? Did the customer stay, leave, or escalate?";
-  }
-
-  if (type === "sales") {
-    return "Did the customer buy? What exactly did they purchase?";
-  }
-
-  return "What was the final outcome?";
-}
-
 export async function POST(req: Request) {
   try {
     if (!process.env.OPENAI_API_KEY) {
@@ -930,19 +852,18 @@ export async function POST(req: Request) {
     const messages = normalizeMessages(body.messages);
     const behavior = analyzeBehaviorPattern(messages);
 
-    const recentFollowUps = messages.slice(-4).filter((m) => m.followUp === true).length;
+    const recentFollowUps = messages
+      .slice(-6)
+      .filter((m) => m.followUp).length;
 
     const maxFollowUps =
       behavior.pressureTier === "terminate_risk" ? 2 :
       behavior.pressureTier === "final_warning" ? 2 :
       behavior.pressureTier === "sharp" ? 1 : 1;
 
-    const lastQuestion = messages[messages.length - 1]?.text || "";
-const lastAnswer = messages[messages.length - 1]?.text || "";
-
-const followUpText = getFollowUp(lastQuestion, lastAnswer, recentFollowUps >= 1);
-
-const shouldPivotInsteadOfRepeat = followUpText === null;
+    const shouldPivotInsteadOfRepeat =
+      recentFollowUps >= maxFollowUps &&
+      behavior.pressureTier !== "terminate_risk";
 
     const elapsedSeconds =
       typeof body.elapsedSeconds === "number" && Number.isFinite(body.elapsedSeconds)
@@ -1008,25 +929,6 @@ const shouldPivotInsteadOfRepeat = followUpText === null;
           const pivotResponse = await client.responses.create({
             model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
             input: `
-
-ELITE HIREQUE INTERVIEW RULES:
-- Run the interview like a senior wireless district manager, not a generic chatbot.
-- One targeted follow-up is allowed if the answer is vague. After that, pivot to a new scenario.
-- Always test real job performance, not theory.
-- Include at least one closing-pressure moment:
-  Customer says: "I'll think about it." Candidate must attempt a confident close.
-- Include at least one revenue moment:
-  Candidate must identify an upsell, plan upgrade, accessory bundle, protection plan, or retention save.
-- Include at least one chaos moment:
-  Customer is upset, line is building, manager is watching, and the candidate must stay controlled.
-- Penalize vague phrases like: "I would help", "I would explain", "good service", "I would de-escalate" unless backed by exact words/actions.
-- Strong candidates give: exact wording, clear next step, ownership, revenue awareness, and customer control.
-- Weak candidates ramble, summarize, avoid numbers, avoid closing, or need repeated prompting.
-- Never repeat the same follow-up more than once.
-- Do not overcoach the candidate.
-- If the candidate fails the same skill twice, move on and record the weakness silently.
-- If the candidate cannot close, control, or recover an upset customer, treat them as not hire-ready.
-
 You are Hireque's elite wireless hiring examiner.
 
 The candidate gave an incomplete answer and already received one follow-up.
@@ -1131,25 +1033,6 @@ Rules:
     const response = await client.responses.create({
       model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
       input: `
-
-ELITE HIREQUE INTERVIEW RULES:
-- Run the interview like a senior wireless district manager, not a generic chatbot.
-- One targeted follow-up is allowed if the answer is vague. After that, pivot to a new scenario.
-- Always test real job performance, not theory.
-- Include at least one closing-pressure moment:
-  Customer says: "I'll think about it." Candidate must attempt a confident close.
-- Include at least one revenue moment:
-  Candidate must identify an upsell, plan upgrade, accessory bundle, protection plan, or retention save.
-- Include at least one chaos moment:
-  Customer is upset, line is building, manager is watching, and the candidate must stay controlled.
-- Penalize vague phrases like: "I would help", "I would explain", "good service", "I would de-escalate" unless backed by exact words/actions.
-- Strong candidates give: exact wording, clear next step, ownership, revenue awareness, and customer control.
-- Weak candidates ramble, summarize, avoid numbers, avoid closing, or need repeated prompting.
-- Never repeat the same follow-up more than once.
-- Do not overcoach the candidate.
-- If the candidate fails the same skill twice, move on and record the weakness silently.
-- If the candidate cannot close, control, or recover an upset customer, treat them as not hire-ready.
-
 You are Hireque's elite wireless hiring examiner.
 
 Role: ${role}

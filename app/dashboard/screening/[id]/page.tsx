@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
+import OpenReportLink from "@/components/OpenReportLink";
 import { useParams, useSearchParams } from "next/navigation";
 import HirequeLogo from "@/components/HirequeLogo";
 import CopyInviteButton from "@/components/CopyInviteButton";
@@ -217,6 +218,35 @@ function buildFilterHref(base: string, current: FilterState, field: keyof Filter
   return `${base}?${params.toString()}`;
 }
 
+function candidateRankValue(candidate: Attempt) {
+  const score = Number(candidate.score || 0);
+  const flags = candidate.red_flags?.length || 0;
+  const verdict = String(candidate.verdict || "").toLowerCase();
+
+  const verdictBoost =
+    verdict.includes("hire") ? 1000 :
+    verdict.includes("advance") ? 800 :
+    verdict.includes("maybe") ? 300 :
+    verdict.includes("reject") ? -500 : 0;
+
+  return verdictBoost + score * 10 - flags * 25;
+}
+
+function rankCandidates(candidates: Attempt[]) {
+  return [...candidates].sort((a, b) => {
+    const rankDiff = candidateRankValue(b) - candidateRankValue(a);
+    if (rankDiff !== 0) return rankDiff;
+
+    const scoreDiff = Number(b.score || 0) - Number(a.score || 0);
+    if (scoreDiff !== 0) return scoreDiff;
+
+    const flagDiff = (a.red_flags?.length || 0) - (b.red_flags?.length || 0);
+    if (flagDiff !== 0) return flagDiff;
+
+    return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+  });
+}
+
 export default function ScreeningCandidatesPage() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
@@ -317,10 +347,13 @@ export default function ScreeningCandidatesPage() {
     ["high", "severe"].includes(a.hiring_risk || "")
   ).length;
 
-  const topCandidates = [...attempts]
+  const rankedAttempts = rankCandidates(attempts);
+
+  const topCandidates = rankedAttempts
     .filter((a) => Number(a.score || 0) > 0)
-    .sort((a, b) => Number(b.score || 0) - Number(a.score || 0))
-    .slice(0, 3);
+    .slice(0, 10);
+
+  const rankedFilteredAttempts = rankCandidates(filteredAttempts);
 
   const inviteUrl = buildInvitePath(screening);
   const base = `/dashboard/screening/${screeningId}`;
@@ -432,9 +465,9 @@ export default function ScreeningCandidatesPage() {
                     <div className="flex flex-wrap items-end justify-between gap-4">
                       <div>
                         <p className="text-sm font-bold uppercase tracking-[0.25em] text-emerald-300">
-                          Best Candidates
+                          Top Ranked Candidates
                         </p>
-                        <h2 className="mt-2 text-2xl font-black">Top 3 by score</h2>
+                        <h2 className="mt-2 text-2xl font-black">Top 10 ranked by score, verdict, and red flags</h2>
                       </div>
                       <p className="text-sm text-slate-400">
                         Score alone is not enough. Check red flags before advancing anyone.
@@ -484,7 +517,7 @@ export default function ScreeningCandidatesPage() {
                         Filters
                       </p>
                       <p className="mt-2 text-sm text-slate-400">
-                        Showing {filteredAttempts.length} of {total} candidates.
+                        Showing ranked candidates: {filteredAttempts.length} of {total}.
                       </p>
                     </div>
 
@@ -566,7 +599,7 @@ export default function ScreeningCandidatesPage() {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {filteredAttempts.map((candidate, index) => {
+                      {rankedFilteredAttempts.map((candidate, index) => {
                         const score = Number(candidate.score || 0);
                         const skillAvg = averageScore(candidate.dimension_scores);
                         const phaseAvg = averageScore(candidate.phase_scores);
@@ -650,12 +683,9 @@ export default function ScreeningCandidatesPage() {
                                   <p className="mt-2 text-sm font-bold text-slate-300">{decisionText(candidate.verdict)}</p>
                                 </div>
 
-                                <Link
-                                  href={`/dashboard/report/${candidate.id}`}
-                                  className="mt-5 block rounded-full bg-blue-600 px-5 py-3 text-center text-sm font-bold hover:bg-blue-500"
-                                >
+                                <OpenReportLink reportId={candidate.id} className="mt-5 block rounded-full bg-blue-600 px-5 py-3 text-center text-sm font-bold hover:bg-blue-500">
                                   View full report
-                                </Link>
+                                </OpenReportLink>
 
                                 <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-xs leading-6 text-slate-400">
                                   Decision rule: review score, red flags, and transcript evidence. Do not advance only because the score is high.

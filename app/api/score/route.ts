@@ -2,6 +2,7 @@
 
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase";
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -14,18 +15,35 @@ type Message = {
 
 export async function POST(req: Request) {
   try {
-    const { role, messages } = await req.json();
+    const body = await req.json();
+
+    const {
+      screening_id,
+      candidate_name,
+      candidate_email,
+      role,
+      level,
+      experience,
+      messages,
+    } = body;
+
+    if (!screening_id || !candidate_name || !candidate_email || !role || !messages?.length) {
+      return NextResponse.json(
+        { error: "Missing required scoring/report fields" },
+        { status: 400 }
+      );
+    }
 
     const transcript = messages
-      .map((m: Message) => `${m.sender === "customer" ? "Customer" : "Candidate"}: ${m.text}`)
+      .map((m: Message) =>
+        `${m.sender === "customer" ? "Customer" : "Candidate"}: ${m.text}`
+      )
       .join("\n");
 
     const systemPrompt =
       role === "support"
         ? `
 You are a strict evaluator for wireless customer service hiring.
-
-Evaluate the candidate based on actual customer support ability, not whether the customer liked them.
 
 Score 0-10:
 - empathy
@@ -43,29 +61,17 @@ Return ONLY valid JSON:
   "overall_score": number,
   "verdict": "Hire" | "Maybe" | "Reject",
   "risk_level": "Low" | "Medium" | "High",
-  "scores": {
-    "empathy": number,
-    "listening_accuracy": number,
-    "issue_diagnosis": number,
-    "de_escalation": number,
-    "clarity": number,
-    "ownership": number,
-    "resolution_quality": number,
-    "professionalism": number,
-    "wireless_context_awareness": number
-  },
+  "scores": {},
   "strengths": string[],
+  "weaknesses": string[],
   "red_flags": string[],
-  "decision_insight": string,
+  "summary": string,
+  "feedback": string,
   "recommendation": string
 }
 `
         : `
 You are a strict evaluator for wireless sales hiring.
-
-Evaluate the candidate based on sales skill, not whether the customer bought.
-
-A candidate can still score high if the customer refuses, as long as the candidate showed strong selling behavior.
 
 Score 0-10:
 - wireless_knowledge
@@ -85,39 +91,30 @@ Return ONLY valid JSON:
   "overall_score": number,
   "verdict": "Hire" | "Maybe" | "Reject",
   "risk_level": "Low" | "Medium" | "High",
-  "scores": {
-    "wireless_knowledge": number,
-    "discovery": number,
-    "budget_handling": number,
-    "objection_handling": number,
-    "value_framing": number,
-    "plan_comparison": number,
-    "confidence": number,
-    "proactivity": number,
-    "closing_attempt": number,
-    "listening_accuracy": number,
-    "pressure_handling": number
-  },
+  "scores": {},
   "strengths": string[],
+  "weaknesses": string[],
   "red_flags": string[],
-  "decision_insight": string,
+  "summary": string,
+  "feedback": string,
   "recommendation": string
 }
 `;
 
     const response = await client.responses.create({
-      model: "gpt-5.5",
+      model: process.env.OPENAI_MODEL || "gpt-5.5",
       input: `${systemPrompt}
 
 Transcript:
 ${transcript}
 
-Evaluate strictly. Do not be nice. Return JSON only.`,
+Evaluate strictly. Return JSON only.`,
     });
 
     const text = response.output_text || "{}";
 
-    let parsed;
+    let parsed: any;
+
     try {
       parsed = JSON.parse(text);
     } catch {
@@ -127,18 +124,67 @@ Evaluate strictly. Do not be nice. Return JSON only.`,
         risk_level: "High",
         scores: {},
         strengths: [],
+        weaknesses: ["AI response could not be parsed."],
         red_flags: ["Scoring response failed to parse."],
-        decision_insight: "Unable to evaluate reliably.",
-        recommendation: "Manual review required.",
+        summary: "Evaluation failed.",
+        feedback: "Manual review required.",
+        recommendation: "Reject until manually reviewed.",
       };
     }
+    const { data: screening, error: screeningError } = await supabaseAdmin
+  .from("screenings")
+  .select("id, company_id")
+  .eq("id", screening_id)
+  .single();
 
-    return NextResponse.json(parsed);
+if (screeningError || !screening?.company_id) {
+  return NextResponse.json(
+    { error: "Invalid screening or missing company ownership" },
+    { status: 400 }
+  );
+}
+
+
+    const { data: report, error: insertError } = await supabaseAdmin
+      .from("candidate_reports")
+      
+      .insert({
+        screening_id,
+        candidate_name,
+        candidate_email,
+        transcript,
+        role,
+        level: level || null,
+        experience: experience || null,
+        overall_score: parsed.overall_score ?? 0,
+        score: parsed.overall_score ?? 0,
+        verdict: parsed.verdict || "Reject",
+        strengths: parsed.strengths || [],
+        weakness: parsed.weaknesses || [],
+        red_flags: parsed.red_flags || [],
+        recommendation: parsed.recommendation || "",
+        summary: parsed.summary || parsed.decision_insight || "",
+        feedback: parsed.feedback || "",
+        raw_evaluation: parsed,
+      })
+      .select("*")
+      .single();
+
+    if (insertError) {
+      console.error("candidate_reports insert error:", insertError);
+      return NextResponse.json(
+        { error: "Scoring succeeded but report save failed", details: insertError.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      ...parsed,
+      report_id: report.id,
+      saved: true,
+    });
   } catch (error) {
     console.error("Scoring error:", error);
-    return NextResponse.json(
-      { error: "Scoring failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Scoring failed" }, { status: 500 });
   }
 }
