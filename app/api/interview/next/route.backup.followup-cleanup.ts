@@ -1,4 +1,4 @@
-﻿export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
@@ -658,7 +658,7 @@ function generatePrecisionFollowUp(
   }
 
   if (isLeadership && weakness.noOutcome) {
-    return "What changed after your actionâ€”customer retention, team behavior, complaint rate, or store execution?";
+    return "What changed after your action—customer retention, team behavior, complaint rate, or store execution?";
   }
 
   if (weakness.lacksNumbers && behavior.pressureTier !== "normal") {
@@ -668,7 +668,7 @@ function generatePrecisionFollowUp(
   if (weakness.noOutcome) {
     return isCustomerRoleplay
       ? "That still does not tell me what happens next. Do I stay, cancel, escalate, or get a clear resolution?"
-      : "What was the final outcomeâ€”did the customer stay, cancel, escalate, buy, or accept the next step?";
+      : "What was the final outcome—did the customer stay, cancel, escalate, buy, or accept the next step?";
   }
 
   if (weakness.noExactWords) {
@@ -758,7 +758,7 @@ async function evaluateLastAnswer({
 
 ELITE HIREQUE INTERVIEW RULES:
 - Run the interview like a senior wireless district manager, not a generic chatbot.
-- Exactly one targeted follow-up is allowed per competency. After one follow-up, never ask the same skill again; pivot to a different practical scenario.
+- One targeted follow-up is allowed if the answer is vague. After that, pivot to a new scenario.
 - Always test real job performance, not theory.
 - Include at least one closing-pressure moment:
   Customer says: "I'll think about it." Candidate must attempt a confident close.
@@ -769,9 +769,9 @@ ELITE HIREQUE INTERVIEW RULES:
 - Penalize vague phrases like: "I would help", "I would explain", "good service", "I would de-escalate" unless backed by exact words/actions.
 - Strong candidates give: exact wording, clear next step, ownership, revenue awareness, and customer control.
 - Weak candidates ramble, summarize, avoid numbers, avoid closing, or need repeated prompting.
-- Never repeat the same follow-up, wording demand, or competency challenge more than once.
+- Never repeat the same follow-up more than once.
 - Do not overcoach the candidate.
-- If the candidate fails the same skill once after a follow-up, move on immediately and record the weakness silently.
+- If the candidate fails the same skill twice, move on and record the weakness silently.
 - If the candidate cannot close, control, or recover an upset customer, treat them as not hire-ready.
 
 You are Hireque's elite answer-quality gatekeeper.
@@ -940,9 +940,9 @@ export async function POST(req: Request) {
     const lastQuestion = messages[messages.length - 1]?.text || "";
 const lastAnswer = messages[messages.length - 1]?.text || "";
 
-const followUpText = null; // disabled: old local follow-up engine caused repeated/colliding follow-ups
+const followUpText = getFollowUp(lastQuestion, lastAnswer, recentFollowUps >= 1);
 
-const shouldPivotInsteadOfRepeat = true; // force pivot after one handled follow-up
+const shouldPivotInsteadOfRepeat = followUpText === null;
 
     const elapsedSeconds =
       typeof body.elapsedSeconds === "number" && Number.isFinite(body.elapsedSeconds)
@@ -1011,7 +1011,7 @@ const shouldPivotInsteadOfRepeat = true; // force pivot after one handled follow
 
 ELITE HIREQUE INTERVIEW RULES:
 - Run the interview like a senior wireless district manager, not a generic chatbot.
-- Exactly one targeted follow-up is allowed per competency. After one follow-up, never ask the same skill again; pivot to a different practical scenario.
+- One targeted follow-up is allowed if the answer is vague. After that, pivot to a new scenario.
 - Always test real job performance, not theory.
 - Include at least one closing-pressure moment:
   Customer says: "I'll think about it." Candidate must attempt a confident close.
@@ -1022,9 +1022,9 @@ ELITE HIREQUE INTERVIEW RULES:
 - Penalize vague phrases like: "I would help", "I would explain", "good service", "I would de-escalate" unless backed by exact words/actions.
 - Strong candidates give: exact wording, clear next step, ownership, revenue awareness, and customer control.
 - Weak candidates ramble, summarize, avoid numbers, avoid closing, or need repeated prompting.
-- Never repeat the same follow-up, wording demand, or competency challenge more than once.
+- Never repeat the same follow-up more than once.
 - Do not overcoach the candidate.
-- If the candidate fails the same skill once after a follow-up, move on immediately and record the weakness silently.
+- If the candidate fails the same skill twice, move on and record the weakness silently.
 - If the candidate cannot close, control, or recover an upset customer, treat them as not hire-ready.
 
 You are Hireque's elite wireless hiring examiner.
@@ -1134,7 +1134,7 @@ Rules:
 
 ELITE HIREQUE INTERVIEW RULES:
 - Run the interview like a senior wireless district manager, not a generic chatbot.
-- Exactly one targeted follow-up is allowed per competency. After one follow-up, never ask the same skill again; pivot to a different practical scenario.
+- One targeted follow-up is allowed if the answer is vague. After that, pivot to a new scenario.
 - Always test real job performance, not theory.
 - Include at least one closing-pressure moment:
   Customer says: "I'll think about it." Candidate must attempt a confident close.
@@ -1145,9 +1145,9 @@ ELITE HIREQUE INTERVIEW RULES:
 - Penalize vague phrases like: "I would help", "I would explain", "good service", "I would de-escalate" unless backed by exact words/actions.
 - Strong candidates give: exact wording, clear next step, ownership, revenue awareness, and customer control.
 - Weak candidates ramble, summarize, avoid numbers, avoid closing, or need repeated prompting.
-- Never repeat the same follow-up, wording demand, or competency challenge more than once.
+- Never repeat the same follow-up more than once.
 - Do not overcoach the candidate.
-- If the candidate fails the same skill once after a follow-up, move on immediately and record the weakness silently.
+- If the candidate fails the same skill twice, move on and record the weakness silently.
 - If the candidate cannot close, control, or recover an upset customer, treat them as not hire-ready.
 
 You are Hireque's elite wireless hiring examiner.
@@ -1233,7 +1233,6 @@ Hard requirements:
     );
   }
 }
-
 
 
 
