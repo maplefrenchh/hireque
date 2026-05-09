@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -309,7 +309,7 @@ function DashboardInner() {
               href="/"
               className="rounded-full border border-white/10 px-5 py-3 text-sm font-bold text-slate-300 hover:bg-white/10"
             >
-              ← Back to Home
+              â† Back to Home
             </Link>
 
             <LogoutButton />
@@ -342,6 +342,16 @@ function DashboardInner() {
             >
               Create screening
             </Link>
+              {typeof window !== "undefined" &&
+                localStorage.getItem("hireque_user_email") ===
+                  "aashnanagpal1209@gmail.com" && (
+                    <Link
+                      href="/admin/companies"
+                      className="rounded-full border border-yellow-400/30 bg-yellow-400/10 px-5 py-2.5 text-sm font-bold text-yellow-200 hover:bg-yellow-400/20"
+                    >
+                      Admin approvals
+                    </Link>
+                  )}
           </div>
         </header>
 
@@ -531,7 +541,7 @@ function DashboardInner() {
                                       {topCandidate.candidate_name || "Unnamed Candidate"}
                                     </p>
                                     <p className="mt-1 text-sm text-slate-400">
-                                      {formatLabel(topCandidate.verdict)} Â· Submitted {formatDate(topCandidate.created_at)}
+                                      {formatLabel(topCandidate.verdict)} Ã‚Â· Submitted {formatDate(topCandidate.created_at)}
                                     </p>
                                   </div>
 
@@ -715,6 +725,8 @@ function Badge({
     </span>
   );
 }
+
+
 
 
 
