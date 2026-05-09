@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic";
+﻿export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
@@ -203,7 +203,7 @@ Return JSON only.
 
     if (error) {
       console.error("candidate_reports insert error:", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error("API error:", error); return NextResponse.json({ error: "Request failed. Please try again." }, { status: 500 });
     }
 
     return NextResponse.json({
@@ -223,4 +223,5 @@ Return JSON only.
     );
   }
 }
+
 

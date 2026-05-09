@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export async function PATCH(req: Request) {
@@ -52,7 +52,7 @@ export async function PATCH(req: Request) {
         .eq("id", screeningId)
         .eq("company_id", profile.company_id);
 
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      if (error) console.error("API error:", error); return NextResponse.json({ error: "Request failed. Please try again." }, { status: 500 });
     } else {
       const nextStatus = action === "archive" ? "archived" : "active";
 
@@ -62,7 +62,7 @@ export async function PATCH(req: Request) {
         .eq("id", screeningId)
         .eq("company_id", profile.company_id);
 
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      if (error) console.error("API error:", error); return NextResponse.json({ error: "Request failed. Please try again." }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });

@@ -212,7 +212,7 @@ export default function InterviewClient() {
     const data: NextInterviewResponse = await res.json();
 
     if (!res.ok) {
-      throw new Error(data.error || "Interview generation failed");
+      throw new Error("Interview generation failed");
     }
 
     return data;
@@ -425,7 +425,7 @@ export default function InterviewClient() {
       const scoreData: ScoreResult & { error?: string } = await scoreRes.json();
 
       if (!scoreRes.ok) {
-        throw new Error(scoreData.error || "Scoring failed");
+        throw new Error("We could not finish the interview submission. Please try again.");
       }
 
       setScoreResult(scoreData);
@@ -815,4 +815,5 @@ function CheckLine({ text }: { text: string }) {
     </div>
   );
 }
+
 

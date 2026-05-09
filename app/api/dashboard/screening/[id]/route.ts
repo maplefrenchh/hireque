@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 
 type RouteContext = {
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // ✅ CORRECT: get company_id from profiles
+    // âœ… CORRECT: get company_id from profiles
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
       .select("company_id")
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
       );
     }
 
-    // ✅ validate screening ownership
+    // âœ… validate screening ownership
     const { data: screening, error: screeningError } = await supabaseAdmin
       .from("screenings")
       .select("*")
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
       );
     }
 
-    // ✅ get candidates (attempts)
+    // âœ… get candidates (attempts)
     const { data: attempts, error: attemptsError } = await supabaseAdmin
       .from("candidate_reports")
       .select("*")

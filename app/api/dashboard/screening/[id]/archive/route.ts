@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -44,7 +44,7 @@ export async function PATCH(
       );
     }
 
-    // 4. Update screening → archived
+    // 4. Update screening â†’ archived
     const { data: screening, error: updateError } = await supabaseAdmin
       .from("screenings")
       .update({ status: "archived" })

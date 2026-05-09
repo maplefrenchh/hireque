@@ -918,7 +918,7 @@ function getFollowUp(question: string, answer: string, alreadyFollowedUp: boolea
 export async function POST(req: Request) {
   try {
     if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json({ error: "Missing OPENAI_API_KEY" }, { status: 500 });
+      console.error("Server configuration error: missing OpenAI key"); return NextResponse.json({ error: "Service temporarily unavailable. Please try again later." }, { status: 500 });
     }
 
     const body = await req.json();
@@ -1233,6 +1233,7 @@ Hard requirements:
     );
   }
 }
+
 
 
 

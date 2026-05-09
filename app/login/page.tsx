@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -46,7 +46,7 @@ const [email, setEmail] = useState("");
     setLoading(false);
 
     if (!res.ok) {
-      setError(data.error || "Login failed.");
+      setError("Login failed.");
       return;
     }
 

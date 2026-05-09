@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -86,3 +86,4 @@ export async function PATCH(
     return NextResponse.json({ error: "Failed to update screening" }, { status: 500 });
   }
 }
+
